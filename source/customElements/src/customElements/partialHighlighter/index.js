@@ -22,15 +22,34 @@ export class PartialHighlighter extends window.HTMLElement {
     this.render()
   }
 
+  static get observedAttributes () {
+    return ['partialStyle']
+  }
+
   render () {
+    let strHtml = ''
     if (this.firstChild && this.firstChild.nodeType === window.Node.TEXT_NODE) {
       const innerText = this.firstChild.textContent.trim()
-      if (innerText !== 'test') {
-        this.shadowRoot.childNodes.forEach(childNode => this.shadowRoot.removeChild(childNode))
-        const para = document.createElement('span')
-        para.innerText = innerText
-        this.shadowRoot.appendChild(para)
+      try {
+        const partialStyle = JSON.parse(this.getAttribute('partialStyle'))
+        const partialStyleKeys = Object.keys(partialStyle)
+
+        strHtml = innerText
+          .split(new RegExp(`(${partialStyleKeys.join('|')})`))
+          .map(text => {
+            if (partialStyle[text]) {
+              const spanElm = document.createElement('span')
+              spanElm.innerText = text
+              spanElm.style = partialStyle[text]
+              return spanElm.outerHTML
+            }
+            return text
+          })
+          .join('')
+      } catch (e) {
+        console.error('e', e)
       }
     }
+    this.shadowRoot.innerHTML = strHtml
   }
 }
